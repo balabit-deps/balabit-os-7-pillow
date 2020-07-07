@@ -1,0 +1,24 @@
+Index: b/Tests/test_file_webp.py
+===================================================================
+--- a/Tests/test_file_webp.py
++++ b/Tests/test_file_webp.py
+@@ -1,6 +1,7 @@
+ from helper import unittest, PillowTestCase, hopper
+ 
+ from PIL import Image
++import os
+ 
+ try:
+     from PIL import _webp
+@@ -40,7 +41,10 @@ class TestFileWebp(PillowTestCase):
+ 
+         # generated with:
+         # dwebp -ppm ../../Tests/images/hopper.webp -o hopper_webp_bits.ppm
+-        target = Image.open('Tests/images/hopper_webp_bits.ppm')
++        if 'ADTTMP' in os.environ:
++            target = Image.open(os.path.join(os.environ['ADTTMP'], 'hopper_webp.ppm'))
++        else:
++            target = Image.open('Tests/images/hopper_webp_bits.ppm')
+         target = target.convert(self.rgb_mode)
+         self.assert_image_similar(image, target, 20.0)
+ 

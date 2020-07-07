@@ -1,0 +1,247 @@
+#!/usr/bin/make -f
+
+# Uncomment this to turn on verbose mode.
+#export DH_VERBOSE=1
+
+PYVERS	:= $(shell pyversions -vr)
+PYVER   := $(shell python -c 'import sys; print sys.version[:3]')
+
+PY3VERS	:= $(shell py3versions -vr)
+PY3VER   := $(shell python3 -c 'import sys; print(sys.version[:3])')
+
+include /usr/share/python/python.mk
+
+include /usr/share/dpkg/architecture.mk
+ifneq ($(DEB_BUILD_MULTIARCH),$(DEB_HOST_MULTIARCH))
+  SET_CROSS_ENV = PYTHONPATH=/usr/lib/python$$pv/plat-$(DEB_HOST_MULTIARCH)
+
+  # FIXME: is this sufficient?
+  SET_CROSS_ENV += _PYTHON_HOST_PLATFORM=$(DEB_HOST_GNU_CPU)
+endif
+
+build-arch: build
+build-indep: build build-doc-stamp
+build: build-stamp
+
+build-doc-stamp: build
+	PYTHONPATH=$(CURDIR)/$(wildcard build/lib.*-$(PY3VER)) $(MAKE) -C docs html
+	touch $@
+
+build-stamp: $(PYVERS:%=build-stamp-python%) $(PY3VERS:%=build-stamp-python%) $(PYVERS:%=check-stamp-python%) $(PY3VERS:%=check-stamp-python%)
+	touch $@
+build-stamp-python%:
+#	tar xvf debian/lcms-images.tar.gz
+	$(SET_CROSS_ENV) python$* setup.py build
+
+	$(SET_CROSS_ENV) python$*-dbg setup.py build
+	touch $@
+
+pillow_tests = $(wildcard Tests/test*.py)
+
+check-stamp-python%:
+ifeq (0,1)
+ifeq ($(DEB_BUILD_MULTIARCH),$(DEB_HOST_MULTIARCH))
+	: # run the tests for the debug interpreter, but continue in case of error
+	rm -rf tmp
+	mkdir -p tmp
+	ln -s ../Tests tmp/Tests
+	ln -s ../build tmp/build
+ifeq (0,1)
+	@echo BEGIN python$*-dbg tests
+	-cd tmp && python$*-dbg ../debian/test-built.py --processes=1 --process-timeout=90 $(pillow_tests)
+endif
+	@echo BEGIN python$* tests
+	-cd tmp && python$* ../debian/test-built.py --processes=1 --process-timeout=90 $(pillow_tests)
+endif
+endif
+	touch $@
+
+clean:
+	dh_testdir
+	dh_testroot
+	rm -f *-stamp*
+	rm -rf compile build
+	rm -rf debian/PILcompat/build
+	rm -rf Pillow*.egg-info
+	find -name '*.py[co]' -exec rm -f {} \;
+	find -type d -name __pycache__ | xargs -r rm -rf
+#	rm -f $$(tar tf debian/lcms-images.tar.gz)
+	rm -rf tmp
+	rm -rf docs/_build
+	dh_clean
+
+get-doc:
+	wget -r --no-parent --no-host-directories --cut-dirs=2 \
+		http://www.pythonware.com/library/pil/handbook/index.htm
+
+install: build install-prereq $(PYVERS:%=install-python%) $(PY3VERS:%=install3-python%)
+	dh_installdocs -ppython-pil-doc #Docs/*
+	dh_installexamples -ppython-pil-doc
+
+	dh_installdocs -ppython-pil -ppython3-pil README.rst
+
+	: # Replace all '#!' calls to python with /usr/bin/python
+	: # and make them executable
+	for i in `find debian/python-pil* -mindepth 3 -type f`; do \
+	  sed '1s,#!.*python[^ ]*\(.*\),#! /usr/bin/python\1,' \
+		$$i > $$i.temp; \
+	  if cmp --quiet $$i $$i.temp; then \
+	    rm -f $$i.temp; \
+	  else \
+	    mv -f $$i.temp $$i; \
+	    chmod 755 $$i; \
+	    echo "fixed interpreter: $$i"; \
+	  fi; \
+	done
+	for i in `find debian/python3-pil* -mindepth 3 -type f`; do \
+	  sed '1s,#!.*python[^ ]*\(.*\),#! /usr/bin/python3\1,' \
+		$$i > $$i.temp; \
+	  if cmp --quiet $$i $$i.temp; then \
+	    rm -f $$i.temp; \
+	  else \
+	    mv -f $$i.temp $$i; \
+	    chmod 755 $$i; \
+	    echo "fixed interpreter: $$i"; \
+	  fi; \
+	done
+
+install-prereq:
+	dh_testdir
+	dh_testroot
+	dh_prep
+
+install-python%:
+	$(SET_CROSS_ENV) python$* setup.py install --root $(CURDIR)/debian/python-pil \
+		$(py_setup_install_args)
+	mkdir -p debian/python-pil/usr/include/python$*
+	install -o root -g root -m 644 \
+		src/libImaging/Imaging.h \
+		src/libImaging/ImagingUtils.h \
+		src/libImaging/ImPlatform.h \
+		src/libImaging/ImDib.h \
+		debian/python-pil/usr/include/python$*
+
+	dh_movefiles -ppython-pil.imagetk \
+	    --sourcedir=debian/python-pil \
+		usr/lib/python$*/$(call py_sitename_sh, $*)/PIL/_imagingtk.so \
+		usr/lib/python$*/$(call py_sitename_sh, $*)/PIL/ImageTk.py
+
+	$(SET_CROSS_ENV) python$*-dbg setup.py install \
+		--root $(CURDIR)/debian/python-pil-dbg \
+		$(py_setup_install_args)
+	mkdir -p debian/python-pil-dbg/usr/include/python$*_d
+	for i in Imaging.h ImagingUtils.h ImPlatform.h ImDib.h; do \
+	  ln -sf ../python$*/$$i \
+	    debian/python-pil-dbg/usr/include/python$*_d/$$i; \
+	done
+
+	find debian/python-pil*-dbg \
+		! -type d ! \( -name '*_d.so' -o -name '*.h' \) | xargs rm -f
+	find debian/python-pil*-dbg -depth -empty -exec rmdir {} \;
+
+	dh_movefiles -ppython-pil.imagetk-dbg \
+	    --sourcedir=debian/python-pil-dbg \
+		usr/lib/python$*/$(call py_sitename_sh, $*)/PIL/_imagingtk_d.so
+
+install3-python%:
+	$(SET_CROSS_ENV) python$* setup.py install \
+		--root $(CURDIR)/debian/python3-pil \
+		$(py_setup_install_args)
+
+	incdir=$$(python$* -c 'import sysconfig; print(sysconfig.get_path("include"))'); \
+	mkdir -p debian/python3-pil/$$incdir; \
+	install -o root -g root -m 644 \
+		src/libImaging/Imaging.h \
+		src/libImaging/ImagingUtils.h \
+		src/libImaging/ImPlatform.h \
+		src/libImaging/ImDib.h \
+		debian/python3-pil/$$incdir
+
+	if `python$* -c "import sys; sys.exit(sys.version_info < (3,5))"`; \
+	then \
+		abitag=.$$(python$* -c "import sysconfig; print(sysconfig.get_config_var('SOABI'))"); \
+	else \
+		abitag=.$$(python$* -c "import sysconfig; print(sysconfig.get_config_var('SOABI'))")-$(DEB_HOST_MULTIARCH); \
+	fi; \
+	echo $$abitag; \
+	dh_movefiles -ppython3-pil.imagetk \
+	    --sourcedir=debian/python3-pil \
+		usr/lib/python3/$(call py_sitename_sh, $*)/PIL/_imagingtk$$abitag.so \
+		usr/lib/python3/$(call py_sitename_sh, $*)/PIL/ImageTk.py
+
+	$(SET_CROSS_ENV) python$*-dbg setup.py install \
+		--root $(CURDIR)/debian/python3-pil-dbg \
+		$(py_setup_install_args)
+
+	incname=$$(basename $$(python$* -c 'import sysconfig; print(sysconfig.get_path("include"))')); \
+	incddir=$$(python$*-dbg -c 'import sysconfig; print(sysconfig.get_path("include"))'); \
+	mkdir -p debian/python3-pil-dbg/$$incddir; \
+	for i in Imaging.h ImagingUtils.h ImPlatform.h ImDib.h; do \
+	  ln -sf ../$$incname/$$i \
+	    debian/python3-pil-dbg/$$incddir/$$i; \
+	done
+
+	find debian/python3-pil*-dbg \
+		! -type d ! \( -name '*.so' -o -name '*.h' \) | xargs rm -f
+	find debian/python3-pil*-dbg -depth -empty -exec rmdir {} \;
+
+	if `python$* -c "import sys; sys.exit(sys.version_info < (3,5))"`; \
+	then \
+		abitag=.$$(python$*-dbg -c "import sysconfig; print(sysconfig.get_config_var('SOABI'))"); \
+	else \
+		abitag=.$$(python$*-dbg -c "import sysconfig; print(sysconfig.get_config_var('SOABI'))")-$(DEB_HOST_MULTIARCH); \
+	fi; \
+	dh_movefiles -ppython3-pil.imagetk-dbg \
+	    --sourcedir=debian/python3-pil-dbg \
+		usr/lib/python3/$(call py_sitename_sh, $*)/PIL/_imagingtk$$abitag.so
+
+# Build architecture-independent files here.
+# Pass -i to all debhelper commands in this target to reduce clutter.
+binary-indep: build build-doc-stamp install
+	dh_testdir -i
+	dh_testroot -i
+	dh_installdocs -i
+	dh_installdocs -ppython-pil-doc docs/_build/html
+	dh_sphinxdoc -ppython-pil-doc
+	dh_installexamples -i
+	dh_installchangelogs -i CHANGES.rst
+	dh_python2 -i
+	dh_link -i
+	dh_compress -i -X.py
+	dh_fixperms -i
+	dh_installdeb -i
+	dh_gencontrol -i
+	dh_md5sums -i
+	dh_builddeb -i
+
+# Build architecture-dependent files here.
+binary-arch: build install
+	dh_testdir -a
+	dh_testroot -a
+	dh_installdocs -a
+	dh_installexamples -a
+	dh_installchangelogs -a CHANGES.rst
+	for p in \
+	  python-pil python-pil.imagetk \
+	  python3-pil python3-pil.imagetk; \
+	do \
+	  rm -rf debian/$$p-dbg/usr/share/doc/$$p-dbg; \
+	  ln -s $$p debian/$$p-dbg/usr/share/doc/$$p-dbg; \
+	done
+	dh_python2 -a
+	dh_python3 -a
+	dh_strip -ppython-pil --dbg-package=python-pil-dbg
+	dh_strip -ppython-pil.imagetk --dbg-package=python-pil.imagetk-dbg
+	dh_strip -ppython3-pil --dbg-package=python3-pil-dbg
+	dh_strip -ppython3-pil.imagetk --dbg-package=python3-pil.imagetk-dbg
+	dh_link -a
+	dh_compress -a -X.py
+	dh_fixperms -a
+	dh_installdeb -a
+	dh_shlibdeps -a
+	dh_gencontrol -a
+	dh_md5sums -a
+	dh_builddeb -a
+
+binary: binary-indep binary-arch
+.PHONY: build clean binary-indep binary-arch binary install
