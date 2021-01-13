@@ -1,3 +1,18 @@
+pillow (5.1.0-1ubuntu0.4) bionic-security; urgency=medium
+
+  * SECURITY UPDATE: buffer over-read via PCX file
+    - debian/patches/CVE-2020-35653.patch: don't trust the image to specify
+      a buffer size in src/PIL/PcxImagePlugin.py.
+    - CVE-2020-35653
+  * SECURITY UPDATE: buffer over-read via SGI RLE image file
+    - debian/patches/CVE-2020-35655-1.patch: add checks to
+      src/libImaging/SgiRleDecode.c.
+    - debian/patches/CVE-2020-35655-2.patch: rework error flags in
+      src/libImaging/SgiRleDecode.c.
+    - CVE-2020-35655
+
+ -- Marc Deslauriers <marc.deslauriers@ubuntu.com>  Wed, 13 Jan 2021 10:51:02 -0500
+
 pillow (5.1.0-1ubuntu0.3) bionic-security; urgency=medium
 
   * SECURITY UPDATE: multiple out of bounds reads
