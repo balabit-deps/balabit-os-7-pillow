@@ -1,3 +1,27 @@
+pillow (5.1.0-1ubuntu0.5) bionic-security; urgency=medium
+
+  * SECURITY UPDATE: negative-offset memcpy with an invalid size
+    - debian/patches/CVE-2021-25290.patch: add extra check to
+      src/libImaging/TiffDecode.c.
+    - CVE-2021-25290
+  * SECURITY UPDATE: DoS via backtrack regex
+    - debian/patches/CVE-2021-25292.patch: use more specific regex in
+      src/PIL/PdfParser.py.
+    - CVE-2021-25292
+  * SECURITY UPDATE: Out of Bounds Read
+    - debian/patches/CVE-2021-25293.patch: add more checks to
+      src/libImaging/SgiRleDecode.c.
+    - CVE-2021-25293
+  * SECURITY UPDATE: DoS via invalid reported size
+    - debian/patches/CVE-2021-2792x.patch: check reported sizes in
+      src/PIL/BlpImagePlugin.py, src/PIL/IcnsImagePlugin.py,
+      src/PIL/IcoImagePlugin.py.
+    - CVE-2021-27921
+    - CVE-2021-27922
+    - CVE-2021-27923
+
+ -- Marc Deslauriers <marc.deslauriers@ubuntu.com>  Wed, 10 Mar 2021 13:01:32 -0500
+
 pillow (5.1.0-1ubuntu0.4) bionic-security; urgency=medium
 
   * SECURITY UPDATE: buffer over-read via PCX file
