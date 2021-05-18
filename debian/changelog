@@ -1,3 +1,32 @@
+pillow (5.1.0-1ubuntu0.6) bionic-security; urgency=medium
+
+  * SECURITY UPDATE: OOB read in Jpeg2KDecode
+    - debian/patches/CVE-2021-25287_8.patch: handle different widths for
+      each band in src/libImaging/Jpeg2KDecode.c.
+    - CVE-2021-25287
+    - CVE-2021-25288
+  * SECURITY UPDATE: DOS in PsdImagePlugin
+    - debian/patches/CVE-2021-28675.patch: sanity check the number of
+      input layers in Tests/test_decompression_bomb.py,
+      Tests/test_file_apng.py, Tests/test_file_blp.py,
+      Tests/test_file_tiff.py, src/PIL/ImageFile.py,
+      src/PIL/PsdImagePlugin.py.
+    - CVE-2021-28675
+  * SECURITY UPDATE: FLI DOS
+    - debian/patches/CVE-2021-28676.patch: check the block advance in
+      src/libImaging/FliDecode.c.
+    - CVE-2021-28676
+  * SECURITY UPDATE: EPS DOS on _open
+    - debian/patches/CVE-2021-28677.patch: properly handle line endings in
+      src/PIL/EpsImagePlugin.py.
+    - CVE-2021-28677
+  * SECURITY UPDATE: BLP DOS
+    - debian/patches/CVE-2021-28678.patch: check that reads return data in
+      src/PIL/BlpImagePlugin.py.
+    - CVE-2021-28678
+
+ -- Marc Deslauriers <marc.deslauriers@ubuntu.com>  Tue, 18 May 2021 07:33:36 -0400
+
 pillow (5.1.0-1ubuntu0.5) bionic-security; urgency=medium
 
   * SECURITY UPDATE: negative-offset memcpy with an invalid size
