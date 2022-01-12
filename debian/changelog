@@ -1,3 +1,29 @@
+pillow (5.1.0-1ubuntu0.7) bionic-security; urgency=medium
+
+  * SECURITY UPDATE: regular expression DoS
+    - debian/patches/CVE-2021-23437.patch: raise ValueError if color
+      specifier is too long in Tests/test_imagecolor.py,
+      src/PIL/ImageColor.py.
+    - CVE-2021-23437
+  * SECURITY UPDATE: Dos via buffer overflow
+    - debian/patches/CVE-2021-34552.patch: limit sprintf modes to 10
+      characters in src/libImaging/Convert.c.
+    - CVE-2021-34552
+  * SECURITY UPDATE: improper initialization
+    - debian/patches/CVE-2022-22815.patch: initialize coordinates to zero
+      in src/path.c.
+    - CVE-2022-22815
+  * SECURITY UPDATE: buffer over-read during initialization
+    - debian/patches/CVE-2022-22816.patch: handle case where path count is
+      zero in src/path.c.
+    - CVE-2022-22816
+  * SECURITY UPDATE: evaluation of arbitrary expressions
+    - debian/patches/CVE-2022-22817.patch: restrict builtins for
+      ImageMath.eval in Tests/test_imagemath.py, src/PIL/ImageMath.py.
+    - CVE-2022-22817
+
+ -- Marc Deslauriers <marc.deslauriers@ubuntu.com>  Wed, 12 Jan 2022 13:21:48 -0500
+
 pillow (5.1.0-1ubuntu0.6) bionic-security; urgency=medium
 
   * SECURITY UPDATE: OOB read in Jpeg2KDecode
