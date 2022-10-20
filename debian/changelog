@@ -1,3 +1,13 @@
+pillow (5.1.0-1ubuntu0.8) bionic-security; urgency=medium
+
+  * SECURITY UPDATE: incomplete fix for CVE-2022-22817
+    - debian/patches/CVE-2022-22817-2.patch: restrict builtins within
+      lambdas for ImageMath.eval in Tests/test_imagemath.py,
+      src/PIL/ImageMath.py.
+    - CVE-2022-22817
+
+ -- Marc Deslauriers <marc.deslauriers@ubuntu.com>  Thu, 20 Oct 2022 11:32:25 -0400
+
 pillow (5.1.0-1ubuntu0.7) bionic-security; urgency=medium
 
   * SECURITY UPDATE: regular expression DoS
